@@ -1,0 +1,50 @@
+ name: UNIQLO Price Tracker
+
+    on:
+      schedule:
+        # 每天每隔 2 小時自動執行一次 (偶數小時整點)
+        - cron: '0 */2 * * *'
+      workflow_dispatch:
+        inputs:
+          force_send:
+            description: '強制發送一封測試信 (true/false)'
+            required: false
+            default: 'false'
+            type: boolean
+
+    permissions:
+      contents: write
+
+    jobs:
+      check-price:
+        runs-on: ubuntu-latest
+        steps:
+          - name: 下載儲存庫代碼
+            uses: actions/checkout@v4
+
+          - name: 設定 Node.js 環境
+            uses: actions/setup-node@v4
+            with:
+              node-version: 20
+
+          - name: 安裝依賴套件
+            run: npm install
+
+          - name: 執行價格檢查與通知
+            env:
+              GMAIL_USER: ${{ secrets.GMAIL_USER }}
+              GMAIL_APP_PASSWORD: ${{ secrets.
+  GMAIL_APP_PASSWORD }}
+              FORCE_SEND: ${{ inputs.force_send }}
+            run: node check_price.mjs
+
+          - name: 儲存價格記錄狀態
+            run: |
+              git config --global user.name "github-
+  actions[bot]"
+              git config --global user.email "github-
+  actions[bot]@users.noreply.github.com"
+              git add last_price.json || true
+              git diff --quiet && git diff --staged --quiet ||
+  (git commit -m "chore: 更新價格檢查記錄 [skip ci]" && git
+  push)
